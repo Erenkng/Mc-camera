@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="mc_green">#FF5FA83C</color>
+    <color name="mc_green_dark">#FF3E6E27</color>
+    <color name="mc_dirt">#FF866043</color>
+    <color name="scrim">#66000000</color>
+    <color name="control_bg">#55000000</color>
+</resources>

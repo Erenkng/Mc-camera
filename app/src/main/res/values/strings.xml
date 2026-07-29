@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MC Camera</string>
+
+    <string name="settings">Ayarlar</string>
+    <string name="shutter">Fotoğraf çek</string>
+    <string name="switch_camera">Kamerayı değiştir</string>
+
+    <string name="density_title">Blok yoğunluğu</string>
+    <string name="density_hint">Ekran genişliğine kaç blok sığacağı. Az blok = iri bloklar, çok blok = daha net görüntü.</string>
+    <string name="density_value">%1$d blok</string>
+
+    <string name="shade_title">Işık uyumu</string>
+    <string name="shade_hint">Blokları sahnenin parlaklığına göre koyultup açar. Kapalıyken saf doku renkleri kullanılır.</string>
+
+    <string name="pack_summary">Paket: %1$s (%2$d blok)</string>
+    <string name="pack_hint">Kendi Minecraft resource pack .zip dosyanı yükle. Saydam olmayan kare blok dokuları kullanılır, aralarından en renkli 64 tanesi seçilir.</string>
+    <string name="import_pack">Resource pack yükle</string>
+    <string name="reset_pack">Yerleşik pakete dön</string>
+    <string name="pack_loaded">%1$s yüklendi (%2$d blok)</string>
+    <string name="pack_failed">Resource pack okunamadı.</string>
+    <string name="pack_reset">Yerleşik pakete dönüldü.</string>
+
+    <string name="permission_rationale">MC Camera canlı görüntüyü bloklara çevirmek için kamera iznine ihtiyaç duyar.</string>
+    <string name="grant_permission">İzin ver</string>
+    <string name="no_front_camera">Bu cihazda ön kamera bulunamadı.</string>
+
+    <string name="saved">Galeriye kaydedildi</string>
+    <string name="save_failed">Kaydedilemedi</string>
+</resources>
