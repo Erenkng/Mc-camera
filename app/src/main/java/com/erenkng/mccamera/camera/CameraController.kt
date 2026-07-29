@@ -4,8 +4,12 @@ import android.content.Context
 import android.graphics.SurfaceTexture
 import android.util.Log
 import android.util.Size
+import android.view.Display
 import android.view.Surface
+import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.DisplayOrientedMeteringPointFactory
+import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.Preview
 import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
@@ -13,6 +17,7 @@ import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import java.util.concurrent.TimeUnit
 
 /**
  * Feeds CameraX preview frames straight into the renderer's [SurfaceTexture].
@@ -30,6 +35,11 @@ class CameraController(
         /** Geometry of the incoming buffer, so the renderer can orient it. */
         fun onCameraTransform(width: Int, height: Int, rotationDegrees: Int, mirror: Boolean)
 
+        /** Capabilities of the camera that just bound. */
+        fun onCameraReady(hasFlash: Boolean, hasFront: Boolean, zoomRatio: Float)
+
+        fun onZoomChanged(ratio: Float)
+
         fun onCameraError(message: String)
     }
 
@@ -37,12 +47,22 @@ class CameraController(
     private var provider: ProcessCameraProvider? = null
     private var surfaceTexture: SurfaceTexture? = null
     private var surface: Surface? = null
+    private var preview: Preview? = null
+    private var camera: Camera? = null
 
     var lensFacing: Int = CameraSelector.LENS_FACING_BACK
         private set
 
     var hasFrontCamera = false
         private set
+
+    var hasFlash = false
+        private set
+
+    var torchOn = false
+        private set
+
+    private var targetRotation = Surface.ROTATION_0
 
     /** Safe to call again after a resume or a surface recreation. */
     fun start(texture: SurfaceTexture) {
@@ -72,14 +92,63 @@ class CameraController(
         } else {
             CameraSelector.LENS_FACING_BACK
         }
+        torchOn = false
         bind()
         return lensFacing
     }
 
     fun stop() {
         provider?.unbindAll()
+        camera = null
         surface?.release()
         surface = null
+        torchOn = false
+    }
+
+    /** Keeps the preview upright when the device rotates. */
+    fun setDeviceRotation(rotation: Int) {
+        targetRotation = rotation
+        preview?.targetRotation = rotation
+    }
+
+    fun toggleTorch(): Boolean {
+        val control = camera?.cameraControl ?: return false
+        if (!hasFlash) return false
+        torchOn = !torchOn
+        control.enableTorch(torchOn)
+        return torchOn
+    }
+
+    /** Current zoom as a ratio, 1.0 being no zoom. */
+    fun zoomRatio(): Float = camera?.cameraInfo?.zoomState?.value?.zoomRatio ?: 1f
+
+    /** Multiplies the current zoom, e.g. by a pinch gesture's scale factor. */
+    fun pinchZoom(scaleFactor: Float) {
+        val info = camera?.cameraInfo ?: return
+        val control = camera?.cameraControl ?: return
+        val state = info.zoomState.value ?: return
+        val target = (state.zoomRatio * scaleFactor)
+            .coerceIn(state.minZoomRatio, state.maxZoomRatio)
+        control.setZoomRatio(target)
+        listener.onZoomChanged(target)
+    }
+
+    /** Focus and expose for the point the user tapped, in view coordinates. */
+    fun focusAt(display: Display, x: Float, y: Float, viewWidth: Int, viewHeight: Int) {
+        val active = camera ?: return
+        if (viewWidth <= 0 || viewHeight <= 0) return
+        val factory = DisplayOrientedMeteringPointFactory(
+            display, active.cameraInfo, viewWidth.toFloat(), viewHeight.toFloat(),
+        )
+        val point = factory.createPoint(x, y)
+        val action = FocusMeteringAction.Builder(point)
+            .setAutoCancelDuration(4, TimeUnit.SECONDS)
+            .build()
+        try {
+            active.cameraControl.startFocusAndMetering(action)
+        } catch (e: Exception) {
+            Log.w(TAG, "Odaklama başarısız", e)
+        }
     }
 
     private fun bind() {
@@ -102,12 +171,14 @@ class CameraController(
             )
             .build()
 
-        val preview = Preview.Builder()
+        val newPreview = Preview.Builder()
             .setResolutionSelector(resolutionSelector)
+            .setTargetRotation(targetRotation)
             .build()
+        preview = newPreview
 
         val mirror = lensFacing == CameraSelector.LENS_FACING_FRONT
-        preview.setSurfaceProvider(executor) { request ->
+        newPreview.setSurfaceProvider(executor) { request ->
             val resolution = request.resolution
             texture.setDefaultBufferSize(resolution.width, resolution.height)
 
@@ -132,7 +203,11 @@ class CameraController(
 
         try {
             cameraProvider.unbindAll()
-            cameraProvider.bindToLifecycle(lifecycleOwner, selector, preview)
+            val bound = cameraProvider.bindToLifecycle(lifecycleOwner, selector, newPreview)
+            camera = bound
+            hasFlash = bound.cameraInfo.hasFlashUnit()
+            torchOn = false
+            listener.onCameraReady(hasFlash, hasFrontCamera, zoomRatio())
         } catch (e: Exception) {
             Log.e(TAG, "bindToLifecycle başarısız", e)
             listener.onCameraError("Kamera bağlanamadı: ${e.message}")

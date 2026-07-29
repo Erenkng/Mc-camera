@@ -83,13 +83,80 @@ object DefaultPack {
         Spec("purple_wool", 0x7E3DB5, 7, Style.SOFT),
         Spec("magenta_wool", 0xBD44B3, 7, Style.SOFT),
         Spec("pink_wool", 0xED8DAC, 7, Style.SOFT),
+
+        // Concrete is the most saturated family in the game and does most of the
+        // work when the camera sees strong colour.
+        Spec("white_concrete", 0xCFD5D6, 4, Style.SOFT),
+        Spec("orange_concrete", 0xE06100, 4, Style.SOFT),
+        Spec("magenta_concrete", 0xA9309F, 4, Style.SOFT),
+        Spec("light_blue_concrete", 0x2489C7, 4, Style.SOFT),
+        Spec("yellow_concrete", 0xF1AF15, 4, Style.SOFT),
+        Spec("lime_concrete", 0x5EA918, 4, Style.SOFT),
+        Spec("pink_concrete", 0xD6658F, 4, Style.SOFT),
+        Spec("gray_concrete", 0x373A3E, 4, Style.SOFT),
+        Spec("light_gray_concrete", 0x7D7D73, 4, Style.SOFT),
+        Spec("cyan_concrete", 0x157788, 4, Style.SOFT),
+        Spec("purple_concrete", 0x64209C, 4, Style.SOFT),
+        Spec("blue_concrete", 0x2C2E8F, 4, Style.SOFT),
+        Spec("brown_concrete", 0x603C20, 4, Style.SOFT),
+        Spec("green_concrete", 0x495B24, 4, Style.SOFT),
+        Spec("red_concrete", 0x8E2121, 4, Style.SOFT),
+        Spec("black_concrete", 0x080A0F, 4, Style.SOFT),
+
+        // Terracotta covers the muted middle of the space: skin, wood, soil.
+        Spec("terracotta", 0x985E44, 10, Style.NOISE),
+        Spec("white_terracotta", 0xD1B1A1, 8, Style.NOISE),
+        Spec("orange_terracotta", 0xA05325, 8, Style.NOISE),
+        Spec("magenta_terracotta", 0x95576C, 8, Style.NOISE),
+        Spec("light_blue_terracotta", 0x706C8A, 8, Style.NOISE),
+        Spec("yellow_terracotta", 0xBA8523, 8, Style.NOISE),
+        Spec("lime_terracotta", 0x677535, 8, Style.NOISE),
+        Spec("pink_terracotta", 0xA14E4E, 8, Style.NOISE),
+        Spec("gray_terracotta", 0x392A24, 8, Style.NOISE),
+        Spec("light_gray_terracotta", 0x876B62, 8, Style.NOISE),
+        Spec("cyan_terracotta", 0x575C5C, 8, Style.NOISE),
+        Spec("purple_terracotta", 0x764656, 8, Style.NOISE),
+        Spec("blue_terracotta", 0x4A3A5B, 8, Style.NOISE),
+        Spec("brown_terracotta", 0x4D3323, 8, Style.NOISE),
+        Spec("green_terracotta", 0x4C532A, 8, Style.NOISE),
+        Spec("red_terracotta", 0x8E3C2E, 8, Style.NOISE),
+        Spec("black_terracotta", 0x251610, 8, Style.NOISE),
+
+        Spec("sandstone", 0xE0D8A8, 7, Style.LOG),
+        Spec("quartz_block", 0xECE9E2, 5, Style.LOG),
+        Spec("calcite", 0xDFDEDA, 8, Style.NOISE),
+        Spec("tuff", 0x6C6E64, 12, Style.NOISE),
+        Spec("basalt", 0x4C4C55, 10, Style.LOG),
+        Spec("blackstone", 0x2A2327, 12, Style.NOISE),
+        Spec("packed_mud", 0x8C6A4E, 12, Style.NOISE),
+        Spec("amethyst_block", 0xA87CD8, 10, Style.GEM, 0xC9A6EE),
+        Spec("warped_planks", 0x2B6C64, 9, Style.PLANKS),
+        Spec("crimson_planks", 0x6A344B, 9, Style.PLANKS),
+        Spec("mangrove_planks", 0x763934, 9, Style.PLANKS),
+        Spec("cherry_planks", 0xE6BCAA, 9, Style.PLANKS),
+        Spec("bamboo_planks", 0xC3A85A, 9, Style.PLANKS),
+        Spec("sculk", 0x0C1114, 10, Style.GEM, 0x1E6E6E),
+        Spec("glowstone", 0xF8C15D, 12, Style.ORE, 0xFFE9A8),
+        Spec("sea_lantern", 0xB5D0C4, 8, Style.GEM, 0xE4F2EC),
+        Spec("magma_block", 0x9E4A20, 14, Style.ORE, 0xF0A030),
+        Spec("dried_kelp_block", 0x35461E, 10, Style.NOISE),
+        Spec("hay_block", 0xA08A0B, 10, Style.LOG),
+        Spec("melon", 0x7BA523, 12, Style.NOISE),
+        Spec("pumpkin", 0xC07615, 10, Style.LOG),
+        Spec("mycelium", 0x6F6265, 12, Style.NOISE),
+        Spec("podzol", 0x573B1A, 12, Style.NOISE),
+        Spec("end_stone", 0xDDDDA5, 9, Style.NOISE),
+        Spec("netherite_block", 0x443A3B, 8, Style.GEM, 0x5C5052),
+        Spec("ancient_debris", 0x5F4136, 10, Style.ORE, 0x8B6B4E),
     )
 
     const val NAME = "Yerleşik paket"
 
-    fun create(): BlockPalette {
+    val blockCount: Int get() = SPECS.size
+
+    fun create(limit: Int = BlockPalette.MAX_BLOCKS): BlockPalette {
         val tiles = SPECS.mapIndexed { index, spec -> BlockTile(spec.name, render(spec, index)) }
-        return PaletteBuilder.build(NAME, tiles)!!
+        return PaletteBuilder.build(NAME, tiles, limit)!!
     }
 
     private fun render(spec: Spec, seed: Int): Bitmap {

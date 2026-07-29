@@ -27,6 +27,12 @@ object ResourcePackLoader {
         RegexOption.IGNORE_CASE,
     )
 
+    /** Animated textures ship a sidecar file; those frames must not be used. */
+    private val ANIMATION_META = Regex(
+        """.*/textures/blocks?/([a-z0-9_\-]+)\.png\.mcmeta$""",
+        RegexOption.IGNORE_CASE,
+    )
+
     private val SKIP_NAMES = listOf(
         "destroy_stage", "_stage", "fire_", "_flow", "_still", "portal",
         "structure_", "debug", "barrier", "spawner", "_overlay", "vine",
@@ -34,11 +40,12 @@ object ResourcePackLoader {
     )
 
     private const val MAX_ENTRY_BYTES = 1 shl 20
-    private const val MAX_TILES = 1024
+    private const val MAX_TILES = 2048
 
-    fun load(context: Context, uri: Uri): BlockPalette {
+    fun load(context: Context, uri: Uri, blockLimit: Int = BlockPalette.MAX_BLOCKS): BlockPalette {
         val tiles = ArrayList<BlockTile>()
         val seen = HashSet<String>()
+        val animated = HashSet<String>()
 
         val stream = context.contentResolver.openInputStream(uri)
             ?: throw PackException("Dosya açılamadı.")
@@ -50,8 +57,15 @@ object ResourcePackLoader {
                     if (entry.isDirectory) continue
                     if (tiles.size >= MAX_TILES) break
 
-                    val path = entry.name.replace('\\', '/')
-                    val match = TEXTURE_PATH.matchEntire("/$path") ?: continue
+                    val path = "/" + entry.name.replace('\\', '/')
+
+                    val meta = ANIMATION_META.matchEntire(path)
+                    if (meta != null) {
+                        animated += meta.groupValues[1].lowercase()
+                        continue
+                    }
+
+                    val match = TEXTURE_PATH.matchEntire(path) ?: continue
                     val name = match.groupValues[1].lowercase()
                     if (!seen.add(name)) continue
                     if (SKIP_NAMES.any { name.contains(it) }) continue
@@ -64,14 +78,18 @@ object ResourcePackLoader {
             }
         }
 
-        if (tiles.isEmpty()) {
+        // Zip order is not guaranteed, so animated textures are dropped only
+        // once the whole archive has been scanned for sidecar files.
+        val usable = tiles.filterNot { animated.contains(it.name) }
+
+        if (usable.isEmpty()) {
             throw PackException(
                 "Bu zip içinde kullanılabilir blok dokusu bulunamadı. " +
-                    "assets/minecraft/textures/block/ klasörü olan bir resource pack seçin."
+                    "assets/<paket>/textures/block/ klasörü olan bir resource pack seçin."
             )
         }
 
-        return PaletteBuilder.build(displayName(context, uri), tiles)
+        return PaletteBuilder.build(displayName(context, uri), usable, blockLimit)
             ?: throw PackException("Palet oluşturulamadı.")
     }
 

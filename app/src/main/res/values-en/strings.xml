@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings">Settings</string>
+    <string name="shutter">Take photo</string>
+    <string name="switch_camera">Switch camera</string>
+    <string name="gallery">Pick from gallery</string>
+    <string name="torch">Torch</string>
+    <string name="timer">Timer</string>
+    <string name="freeze">Freeze preview</string>
+    <string name="selected">Selected</string>
+    <string name="delete">Delete</string>
+    <string name="show">View</string>
+    <string name="percent">%1$d%%</string>
+
+    <string name="mode_photo">Photo</string>
+    <string name="mode_video">Video</string>
+
+    <string name="hint">Pinch to zoom, tap to focus. Change block density and textures in settings.</string>
+
+    <string name="section_look">Look</string>
+    <string name="section_style">Block style</string>
+    <string name="section_colour">Colour</string>
+    <string name="section_output">Output</string>
+    <string name="section_packs">Packs</string>
+
+    <string name="mode_blocks">Blocks</string>
+    <string name="mode_map_art">Map art</string>
+    <string name="mode_pixels">Pixels</string>
+
+    <string name="density_title">Block density</string>
+    <string name="density_hint">How many blocks fit across the screen. Fewer blocks means chunkier art, more blocks means a sharper image.</string>
+    <string name="density_value">%1$d blocks</string>
+
+    <string name="shade_title">Light matching</string>
+    <string name="dither_title">Dithering</string>
+    <string name="dither_hint">Gives neighbouring cells different blocks so a limited palette reads as more colours. Kills banding.</string>
+    <string name="bevel_title">3D edge shading</string>
+    <string name="outline_title">Block outlines</string>
+
+    <string name="brightness">Brightness</string>
+    <string name="contrast">Contrast</string>
+    <string name="saturation">Saturation</string>
+    <string name="reset_colour">Reset colour</string>
+
+    <string name="photo_detail">Photo resolution</string>
+    <string name="photo_detail_hint">High and maximum re-render the mosaic at 8 or 16 pixels per block instead of screen size. The long edge is capped at 4096 px.</string>
+    <string name="photo_screen">Screen</string>
+    <string name="photo_high">High</string>
+    <string name="photo_max">Maximum</string>
+
+    <string name="video_quality">Video resolution</string>
+
+    <string name="block_limit">Palette size</string>
+    <string name="block_limit_value">%1$d blocks</string>
+    <string name="block_limit_hint">How many distinct blocks to use. Fewer looks more like the game, more stays truer to the colours.</string>
+
+    <string name="pack_blocks">%1$d blocks</string>
+    <string name="pack_hint">Load your own Minecraft resource pack .zip. Square, fully opaque block textures are used, and the most colour-diverse ones are picked.</string>
+    <string name="import_pack">Load resource pack</string>
+    <string name="pack_loaded">Loaded %1$s (%2$d blocks)</string>
+    <string name="pack_failed">Could not read the resource pack.</string>
+    <string name="pack_deleted">Pack deleted.</string>
+
+    <string name="still_save">Save</string>
+    <string name="still_close">Back to camera</string>
+
+    <string name="permission_rationale">MC Camera needs the camera to turn the live view into blocks.</string>
+    <string name="grant_permission">Grant permission</string>
+    <string name="no_front_camera">No front camera on this device.</string>
+    <string name="no_flash">This camera has no torch.</string>
+    <string name="busy_recording">Cannot switch cameras while recording.</string>
+    <string name="frozen">Preview frozen</string>
+    <string name="unfrozen">Back to live preview</string>
+
+    <string name="saved_photo">Saved to gallery (%1$s)</string>
+    <string name="saved_video">Video saved to gallery</string>
+    <string name="save_failed">Could not save</string>
+    <string name="record_failed">Could not start recording</string>
+    <string name="photo_failed">Could not open the photo</string>
+    <string name="no_viewer">No app can open this</string>
+</resources>

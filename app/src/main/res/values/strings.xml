@@ -5,26 +5,82 @@
     <string name="settings">Ayarlar</string>
     <string name="shutter">Fotoğraf çek</string>
     <string name="switch_camera">Kamerayı değiştir</string>
+    <string name="gallery">Galeriden seç</string>
+    <string name="torch">Fener</string>
+    <string name="timer">Zamanlayıcı</string>
+    <string name="freeze">Görüntüyü dondur</string>
+    <string name="selected">Seçili</string>
+    <string name="delete">Sil</string>
+    <string name="show">Göster</string>
+    <string name="percent">%%%1$d</string>
+    <string name="zero_time">00:00</string>
+
+    <string name="mode_photo">Fotoğraf</string>
+    <string name="mode_video">Video</string>
+
+    <string name="hint">Yakınlaştırmak için iki parmakla sıkıştır, odaklamak için dokun. Ayarlardan blok yoğunluğunu ve dokuları değiştir.</string>
+
+    <string name="section_look">Görünüm</string>
+    <string name="section_style">Blok stili</string>
+    <string name="section_colour">Renk</string>
+    <string name="section_output">Çıktı</string>
+    <string name="section_packs">Paketler</string>
+
+    <string name="mode_blocks">Bloklar</string>
+    <string name="mode_map_art">Harita</string>
+    <string name="mode_pixels">Piksel</string>
 
     <string name="density_title">Blok yoğunluğu</string>
     <string name="density_hint">Ekran genişliğine kaç blok sığacağı. Az blok = iri bloklar, çok blok = daha net görüntü.</string>
     <string name="density_value">%1$d blok</string>
 
     <string name="shade_title">Işık uyumu</string>
-    <string name="shade_hint">Blokları sahnenin parlaklığına göre koyultup açar. Kapalıyken saf doku renkleri kullanılır.</string>
+    <string name="dither_title">Renk karıştırma</string>
+    <string name="dither_hint">Komşu hücrelere farklı bloklar seçtirerek sınırlı paletten daha zengin renk çıkarır. Bantlaşmayı yok eder.</string>
+    <string name="bevel_title">3B kenar gölgesi</string>
+    <string name="outline_title">Blok çizgileri</string>
 
-    <string name="pack_summary">Paket: %1$s (%2$d blok)</string>
-    <string name="pack_hint">Kendi Minecraft resource pack .zip dosyanı yükle. Saydam olmayan kare blok dokuları kullanılır, aralarından en renkli 64 tanesi seçilir.</string>
+    <string name="brightness">Parlaklık</string>
+    <string name="contrast">Kontrast</string>
+    <string name="saturation">Doygunluk</string>
+    <string name="reset_colour">Renkleri sıfırla</string>
+
+    <string name="photo_detail">Fotoğraf çözünürlüğü</string>
+    <string name="photo_detail_hint">Yüksek ve maksimum, mozaiği ekran yerine blok başına 8 veya 16 pikselle yeniden çizer. Uzun kenar 4096 pikselle sınırlıdır.</string>
+    <string name="photo_screen">Ekran</string>
+    <string name="photo_high">Yüksek</string>
+    <string name="photo_max">Maksimum</string>
+
+    <string name="video_quality">Video çözünürlüğü</string>
+    <string name="video_720">720p</string>
+    <string name="video_1080">1080p</string>
+
+    <string name="block_limit">Palet boyutu</string>
+    <string name="block_limit_value">%1$d blok</string>
+    <string name="block_limit_hint">Kaç farklı blok kullanılacağı. Az blok daha oyun içi bir görünüm verir, çok blok renkleri daha sadık aktarır.</string>
+
+    <string name="pack_blocks">%1$d blok</string>
+    <string name="pack_hint">Kendi Minecraft resource pack .zip dosyanı yükle. Saydam olmayan kare blok dokuları kullanılır, aralarından renk uzayını en geniş kapsayanlar seçilir.</string>
     <string name="import_pack">Resource pack yükle</string>
-    <string name="reset_pack">Yerleşik pakete dön</string>
     <string name="pack_loaded">%1$s yüklendi (%2$d blok)</string>
     <string name="pack_failed">Resource pack okunamadı.</string>
-    <string name="pack_reset">Yerleşik pakete dönüldü.</string>
+    <string name="pack_deleted">Paket silindi.</string>
+
+    <string name="still_save">Kaydet</string>
+    <string name="still_close">Kameraya dön</string>
 
     <string name="permission_rationale">MC Camera canlı görüntüyü bloklara çevirmek için kamera iznine ihtiyaç duyar.</string>
     <string name="grant_permission">İzin ver</string>
     <string name="no_front_camera">Bu cihazda ön kamera bulunamadı.</string>
+    <string name="no_flash">Bu kamerada fener yok.</string>
+    <string name="busy_recording">Kayıt sürerken kamera değiştirilemez.</string>
+    <string name="frozen">Görüntü donduruldu</string>
+    <string name="unfrozen">Canlı görüntüye dönüldü</string>
 
-    <string name="saved">Galeriye kaydedildi</string>
+    <string name="saved_photo">Galeriye kaydedildi (%1$s)</string>
+    <string name="saved_video">Video galeriye kaydedildi</string>
     <string name="save_failed">Kaydedilemedi</string>
+    <string name="record_failed">Kayıt başlatılamadı</string>
+    <string name="photo_failed">Fotoğraf açılamadı</string>
+    <string name="no_viewer">Açacak uygulama bulunamadı</string>
 </resources>

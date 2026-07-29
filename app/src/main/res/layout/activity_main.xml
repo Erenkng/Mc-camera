@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/black">
@@ -10,55 +11,238 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- Top row: torch, timer, freeze, settings -->
     <LinearLayout
-        android:id="@+id/controls"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:background="@drawable/bg_controls"
-        android:gravity="center_vertical"
+        android:layout_gravity="top"
+        android:gravity="end"
         android:orientation="horizontal"
-        android:paddingStart="24dp"
-        android:paddingTop="20dp"
-        android:paddingEnd="24dp"
-        android:paddingBottom="36dp">
+        android:paddingStart="16dp"
+        android:paddingTop="36dp"
+        android:paddingEnd="16dp">
+
+        <ImageButton
+            android:id="@+id/torch"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginEnd="10dp"
+            android:background="@drawable/bg_round_button"
+            android:contentDescription="@string/torch"
+            android:src="@drawable/ic_flash_off"
+            app:tint="@color/white" />
+
+        <ImageButton
+            android:id="@+id/timer"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginEnd="10dp"
+            android:background="@drawable/bg_round_button"
+            android:contentDescription="@string/timer"
+            android:src="@drawable/ic_timer_off"
+            app:tint="@color/white" />
+
+        <ImageButton
+            android:id="@+id/freeze"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginEnd="10dp"
+            android:background="@drawable/bg_round_button"
+            android:contentDescription="@string/freeze"
+            android:src="@drawable/ic_freeze"
+            app:tint="@color/white" />
 
         <ImageButton
             android:id="@+id/settings"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:background="@drawable/bg_round_button"
             android:contentDescription="@string/settings"
             android:src="@drawable/ic_settings"
             app:tint="@color/white" />
+    </LinearLayout>
 
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
+    <LinearLayout
+        android:id="@+id/recordBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="40dp"
+        android:background="@drawable/bg_pill"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="6dp"
+        android:visibility="gone">
 
-        <ImageButton
-            android:id="@+id/shutter"
-            android:layout_width="76dp"
-            android:layout_height="76dp"
-            android:background="@drawable/bg_shutter"
-            android:contentDescription="@string/shutter"
-            android:scaleType="center"
-            android:src="@drawable/ic_shutter" />
+        <View
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_record_dot" />
 
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
+        <TextView
+            android:id="@+id/recordTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/zero_time"
+            android:textColor="@color/white"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
-        <ImageButton
-            android:id="@+id/switchCamera"
-            android:layout_width="52dp"
-            android:layout_height="52dp"
-            android:background="@drawable/bg_round_button"
-            android:contentDescription="@string/switch_camera"
-            android:src="@drawable/ic_switch_camera"
-            app:tint="@color/white" />
+    <TextView
+        android:id="@+id/zoomLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="96dp"
+        android:background="@drawable/bg_pill"
+        android:paddingStart="12dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="4dp"
+        android:textColor="@color/white"
+        android:textSize="13sp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/countdown"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:textColor="@color/white"
+        android:textSize="96sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/hint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal|bottom"
+        android:layout_marginBottom="200dp"
+        android:background="@drawable/bg_pill"
+        android:gravity="center"
+        android:paddingStart="16dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="10dp"
+        android:text="@string/hint"
+        android:textColor="@color/white"
+        android:textSize="13sp"
+        android:visibility="gone" />
+
+    <!-- Bottom: mode switch plus the main controls -->
+    <LinearLayout
+        android:id="@+id/controlsContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@drawable/bg_controls"
+        android:orientation="vertical"
+        android:paddingTop="16dp"
+        android:paddingBottom="32dp">
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/modeGroup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="14dp"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/modePhoto"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="@string/mode_photo" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/modeVideo"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="@string/mode_video" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="28dp"
+            android:paddingEnd="28dp">
+
+            <ImageButton
+                android:id="@+id/gallery"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:background="@drawable/bg_round_button"
+                android:contentDescription="@string/gallery"
+                android:src="@drawable/ic_gallery"
+                app:tint="@color/white" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <ImageButton
+                android:id="@+id/shutter"
+                android:layout_width="76dp"
+                android:layout_height="76dp"
+                android:background="@drawable/bg_shutter"
+                android:contentDescription="@string/shutter"
+                android:scaleType="center"
+                android:src="@drawable/ic_shutter" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <ImageButton
+                android:id="@+id/switchCamera"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:background="@drawable/bg_round_button"
+                android:contentDescription="@string/switch_camera"
+                android:src="@drawable/ic_switch_camera"
+                app:tint="@color/white" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Shown while an imported photo is on screen -->
+    <LinearLayout
+        android:id="@+id/stillBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="@drawable/bg_controls"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingTop="20dp"
+        android:paddingBottom="40dp"
+        android:visibility="gone">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/stillClose"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            android:text="@string/still_close" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/stillSave"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/still_save" />
     </LinearLayout>
 
     <ProgressBar
@@ -80,7 +264,6 @@
         android:visibility="gone">
 
         <TextView
-            android:id="@+id/permissionMessage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center"

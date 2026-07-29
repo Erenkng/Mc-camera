@@ -67,6 +67,25 @@ object GlUtils {
     }
 }
 
+/**
+ * A linked shader program with its uniform and attribute locations cached, so a
+ * frame does not spend its time in `glGetUniformLocation`.
+ */
+class Program(vertexSource: String, fragmentSource: String) {
+
+    private val id = GlUtils.buildProgram(vertexSource, fragmentSource)
+    private val uniforms = HashMap<String, Int>()
+    private val attributes = HashMap<String, Int>()
+
+    fun use() = GLES20.glUseProgram(id)
+
+    fun uniform(name: String): Int =
+        uniforms.getOrPut(name) { GLES20.glGetUniformLocation(id, name) }
+
+    fun attribute(name: String): Int =
+        attributes.getOrPut(name) { GLES20.glGetAttribLocation(id, name) }
+}
+
 /** Minimal column-major 3x3 helpers for the camera UV transform. */
 object Mat3 {
 
