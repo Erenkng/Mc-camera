@@ -5,6 +5,11 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Sürüm numarası (v olmadan, örn. 0.1.0). Tag yoksa oluşturulur."
+        required: true
+        default: "0.1.0"
 
 permissions:
   contents: write
@@ -56,12 +61,19 @@ jobs:
 
       - name: Name the APK
         id: apk
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            VERSION="${INPUT_VERSION#v}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
           mkdir -p dist
           cp app/build/outputs/apk/release/app-release.apk "dist/MC-Camera-${VERSION}.apk"
           echo "path=dist/MC-Camera-${VERSION}.apk" >> "$GITHUB_OUTPUT"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -70,15 +82,16 @@ jobs:
           path: ${{ steps.apk.outputs.path }}
           if-no-files-found: error
 
+      # On a manual run the tag is created from the current commit, so a release
+      # can be cut without pushing a tag by hand.
       - name: Publish GitHub release
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          name: MC Camera ${{ github.ref_name }}
+          tag_name: ${{ steps.apk.outputs.tag }}
+          name: MC Camera ${{ steps.apk.outputs.tag }}
           files: ${{ steps.apk.outputs.path }}
-          generate_release_notes: true
           body: |
-            **MC Camera ${{ github.ref_name }}** — kamerayı canlı olarak Minecraft bloklarına çeviren Android uygulaması.
+            **MC Camera ${{ steps.apk.outputs.tag }}** — kamerayı canlı olarak Minecraft bloklarına çeviren Android uygulaması.
 
             ### Kurulum
             Aşağıdaki APK'yı indirip telefonuna kur. Bilinmeyen kaynaklardan kuruluma izin vermen gerekebilir.
