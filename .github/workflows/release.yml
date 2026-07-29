@@ -85,19 +85,46 @@ jobs:
       # On a manual run the tag is created from the current commit, so a release
       # can be cut without pushing a tag by hand.
       - name: Publish GitHub release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.apk.outputs.tag }}
-          name: MC Camera ${{ steps.apk.outputs.tag }}
-          files: ${{ steps.apk.outputs.path }}
-          body: |
-            **MC Camera ${{ steps.apk.outputs.tag }}** — kamerayı canlı olarak Minecraft bloklarına çeviren Android uygulaması.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.apk.outputs.tag }}
+          APK: ${{ steps.apk.outputs.path }}
+        run: |
+          set -euo pipefail
 
-            ### Kurulum
-            Aşağıdaki APK'yı indirip telefonuna kur. Bilinmeyen kaynaklardan kuruluma izin vermen gerekebilir.
+          cat > release-notes.md <<'NOTES'
+          Kamerayı canlı olarak Minecraft bloklarına çeviren Android uygulaması.
 
-            ### Bu sürümde
-            - Gerçek zamanlı blok mozaiği (OpenGL ES 3.0 shader)
-            - Ayarlanabilir blok yoğunluğu: 16 – 128 blok
-            - Kendi resource pack `.zip` dosyanı yükleme
-            - Işık uyumu, ön/arka kamera, galeriye kaydetme
+          ### Kurulum
+          Aşağıdaki APK'yı indirip telefonuna kur. Bilinmeyen kaynaklardan
+          kuruluma izin vermen gerekebilir. Android 8.0 ve üzeri gerekir.
+
+          ### Bu sürümde
+          - Gerçek zamanlı blok mozaiği (OpenGL ES 3.0 shader)
+          - Ayarlanabilir blok yoğunluğu: 16 - 128 blok
+          - Kendi resource pack zip dosyanı yükleme
+          - Işık uyumu, ön/arka kamera, galeriye kaydetme
+          NOTES
+
+          # A previous run can leave an untagged draft behind; clear it so the
+          # release below is the only one for this version.
+          gh api "repos/$GITHUB_REPOSITORY/releases" --paginate \
+            --jq ".[] | select(.draft) | select(.tag_name == \"$TAG\" or .name == \"MC Camera $TAG\") | .id" \
+            | while read -r id; do
+                echo "Eski taslak siliniyor: $id"
+                gh api -X DELETE "repos/$GITHUB_REPOSITORY/releases/$id"
+              done
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" --clobber
+            gh release edit "$TAG" --draft=false --latest \
+              --title "MC Camera $TAG" --notes-file release-notes.md
+          else
+            gh release create "$TAG" "$APK" \
+              --target "$GITHUB_SHA" \
+              --title "MC Camera $TAG" \
+              --notes-file release-notes.md \
+              --latest
+          fi
+
+          gh release view "$TAG" --json tagName,isDraft,assets
