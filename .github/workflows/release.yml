@@ -94,16 +94,30 @@ jobs:
 
           cat > release-notes.md <<'NOTES'
           Kamerayı canlı olarak Minecraft bloklarına çeviren Android uygulaması.
+          Tüm iş GPU'da, kare başına bir OpenGL ES 3.0 shader'ında yapılır.
 
           ### Kurulum
           Aşağıdaki APK'yı indirip telefonuna kur. Bilinmeyen kaynaklardan
           kuruluma izin vermen gerekebilir. Android 8.0 ve üzeri gerekir.
 
-          ### Bu sürümde
-          - Gerçek zamanlı blok mozaiği (OpenGL ES 3.0 shader)
-          - Ayarlanabilir blok yoğunluğu: 16 - 128 blok
-          - Kendi resource pack zip dosyanı yükleme
-          - Işık uyumu, ön/arka kamera, galeriye kaydetme
+          ### Görüntü
+          - Üç mod: Bloklar, Harita (düz blok rengi), Piksel
+          - Blok yoğunluğu 8 - 192, palet boyutu 16 - 256 blok
+          - OKLab renk eşleştirme: ten tonları, gökyüzü ve gölgeler tanınabilir kalır
+          - Bayer dithering ile bantlaşmasız gradyanlar
+          - 3B kenar gölgesi, blok çizgileri, ışık uyumu
+          - Parlaklık / kontrast / doygunluk ayarları
+
+          ### Çekim
+          - Video kaydı (720p / 1080p, H.264 MP4, sessiz)
+          - Yüksek çözünürlüklü fotoğraf: blok başına 8 veya 16 piksel
+          - Galeriden fotoğraf seçip mozaiğe çevirme
+          - Zamanlayıcı, fener, parmakla yakınlaştırma, dokunarak odaklama,
+            görüntüyü dondurma, ön/arka kamera, yatay mod
+
+          ### Paketler
+          - Birden fazla resource pack saklanır ve aralarında geçiş yapılır
+          - 100+ blokluk yerleşik paket kod içinde üretilir; repoda oyun varlığı yok
           NOTES
 
           # A previous run can leave an untagged draft behind; clear it so the
