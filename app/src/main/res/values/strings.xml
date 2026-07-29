@@ -83,4 +83,21 @@
     <string name="record_failed">Kayıt başlatılamadı</string>
     <string name="photo_failed">Fotoğraf açılamadı</string>
     <string name="no_viewer">Açacak uygulama bulunamadı</string>
+    <string name="format">Format</string>
+    <string name="stop_recording">Kaydı durdur</string>
+    <string name="gallery_title">Galeri</string>
+    <string name="gallery_subtitle">MC Camera ile çektiklerin</string>
+    <string name="gallery_empty">Henüz bir şey çekmedin.\nDeklanşöre bas!</string>
+    <string name="import_photo">Fotoğraf seç</string>
+
+    <string-array name="mode_names">
+        <item>Bloklar</item>
+        <item>Harita</item>
+        <item>Piksel</item>
+        <item>Gece Görüşü</item>
+        <item>Nether</item>
+        <item>End</item>
+        <item>Glowstone</item>
+        <item>Su Altı</item>
+    </string-array>
 </resources>

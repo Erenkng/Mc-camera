@@ -4,83 +4,97 @@
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/black">
+    android:background="@color/surface">
 
     <android.opengl.GLSurfaceView
         android:id="@+id/glView"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Top row: torch, timer, freeze, settings -->
+    <!-- Floating glass bar: torch, timer, format, freeze, settings -->
     <LinearLayout
-        android:layout_width="match_parent"
+        android:id="@+id/topBar"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="top"
-        android:gravity="end"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="44dp"
+        android:background="@drawable/bg_glass_bar"
         android:orientation="horizontal"
-        android:paddingStart="16dp"
-        android:paddingTop="36dp"
-        android:paddingEnd="16dp">
+        android:paddingStart="8dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="6dp">
 
         <ImageButton
             android:id="@+id/torch"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:layout_marginEnd="10dp"
-            android:background="@drawable/bg_round_button"
+            style="@style/GlassIcon"
             android:contentDescription="@string/torch"
-            android:src="@drawable/ic_flash_off"
-            app:tint="@color/white" />
+            android:src="@drawable/ic_flash_off" />
 
         <ImageButton
             android:id="@+id/timer"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:layout_marginEnd="10dp"
-            android:background="@drawable/bg_round_button"
+            style="@style/GlassIcon"
             android:contentDescription="@string/timer"
-            android:src="@drawable/ic_timer_off"
-            app:tint="@color/white" />
+            android:src="@drawable/ic_timer_off" />
+
+        <ImageButton
+            android:id="@+id/format"
+            style="@style/GlassIcon"
+            android:contentDescription="@string/format"
+            android:src="@drawable/ic_aspect" />
 
         <ImageButton
             android:id="@+id/freeze"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:layout_marginEnd="10dp"
-            android:background="@drawable/bg_round_button"
+            style="@style/GlassIcon"
             android:contentDescription="@string/freeze"
-            android:src="@drawable/ic_freeze"
-            app:tint="@color/white" />
+            android:src="@drawable/ic_freeze" />
 
         <ImageButton
             android:id="@+id/settings"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="@drawable/bg_round_button"
+            style="@style/GlassIcon"
             android:contentDescription="@string/settings"
-            android:src="@drawable/ic_settings"
-            app:tint="@color/white" />
+            android:src="@drawable/ic_settings" />
     </LinearLayout>
+
+    <HorizontalScrollView
+        android:id="@+id/formatRow"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="102dp"
+        android:clipToPadding="false"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:scrollbars="none"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/formatChips"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" />
+    </HorizontalScrollView>
 
     <LinearLayout
         android:id="@+id/recordBadge"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|center_horizontal"
-        android:layout_marginTop="40dp"
+        android:layout_marginTop="106dp"
         android:background="@drawable/bg_pill"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="12dp"
-        android:paddingTop="6dp"
-        android:paddingEnd="14dp"
-        android:paddingBottom="6dp"
+        android:paddingStart="14dp"
+        android:paddingTop="7dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="7dp"
         android:visibility="gone">
 
         <View
+            android:id="@+id/recordDot"
             android:layout_width="10dp"
             android:layout_height="10dp"
-            android:layout_marginEnd="8dp"
+            android:layout_marginEnd="9dp"
             android:background="@drawable/bg_record_dot" />
 
         <TextView
@@ -98,14 +112,15 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|center_horizontal"
-        android:layout_marginTop="96dp"
+        android:layout_marginTop="150dp"
         android:background="@drawable/bg_pill"
-        android:paddingStart="12dp"
-        android:paddingTop="4dp"
-        android:paddingEnd="12dp"
-        android:paddingBottom="4dp"
+        android:paddingStart="14dp"
+        android:paddingTop="5dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="5dp"
         android:textColor="@color/white"
         android:textSize="13sp"
+        android:textStyle="bold"
         android:visibility="gone" />
 
     <TextView
@@ -114,7 +129,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:textColor="@color/white"
-        android:textSize="96sp"
+        android:textSize="112sp"
         android:textStyle="bold"
         android:visibility="gone" />
 
@@ -123,19 +138,21 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal|bottom"
-        android:layout_marginBottom="200dp"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginBottom="250dp"
         android:background="@drawable/bg_pill"
         android:gravity="center"
-        android:paddingStart="16dp"
-        android:paddingTop="10dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="10dp"
+        android:paddingStart="18dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="18dp"
+        android:paddingBottom="12dp"
         android:text="@string/hint"
         android:textColor="@color/white"
         android:textSize="13sp"
         android:visibility="gone" />
 
-    <!-- Bottom: mode switch plus the main controls -->
+    <!-- Bottom stack: shooting modes, then the controls, then photo/video -->
     <LinearLayout
         android:id="@+id/controlsContainer"
         android:layout_width="match_parent"
@@ -143,48 +160,44 @@
         android:layout_gravity="bottom"
         android:background="@drawable/bg_controls"
         android:orientation="vertical"
-        android:paddingTop="16dp"
-        android:paddingBottom="32dp">
+        android:paddingTop="14dp"
+        android:paddingBottom="26dp">
 
-        <com.google.android.material.button.MaterialButtonToggleGroup
-            android:id="@+id/modeGroup"
-            android:layout_width="wrap_content"
+        <HorizontalScrollView
+            android:id="@+id/modeScroller"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="14dp"
-            app:selectionRequired="true"
-            app:singleSelection="true">
+            android:clipToPadding="false"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:scrollbars="none">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/modePhoto"
-                style="@style/Widget.Material3.Button.OutlinedButton"
+            <LinearLayout
+                android:id="@+id/modeChips"
                 android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:text="@string/mode_photo" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/modeVideo"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:text="@string/mode_video" />
-        </com.google.android.material.button.MaterialButtonToggleGroup>
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingStart="28dp"
-            android:paddingEnd="28dp">
+            android:paddingStart="30dp"
+            android:paddingEnd="30dp">
 
-            <ImageButton
+            <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/gallery"
-                android:layout_width="52dp"
-                android:layout_height="52dp"
-                android:background="@drawable/bg_round_button"
+                android:layout_width="54dp"
+                android:layout_height="54dp"
+                android:background="@drawable/bg_gallery_thumb"
                 android:contentDescription="@string/gallery"
+                android:padding="14dp"
+                android:scaleType="centerCrop"
                 android:src="@drawable/ic_gallery"
+                app:shapeAppearanceOverlay="@style/ShapeThumb"
                 app:tint="@color/white" />
 
             <Space
@@ -192,14 +205,10 @@
                 android:layout_height="1dp"
                 android:layout_weight="1" />
 
-            <ImageButton
+            <com.erenkng.mccamera.ui.ShutterButton
                 android:id="@+id/shutter"
-                android:layout_width="76dp"
-                android:layout_height="76dp"
-                android:background="@drawable/bg_shutter"
-                android:contentDescription="@string/shutter"
-                android:scaleType="center"
-                android:src="@drawable/ic_shutter" />
+                android:layout_width="82dp"
+                android:layout_height="82dp" />
 
             <Space
                 android:layout_width="0dp"
@@ -208,13 +217,21 @@
 
             <ImageButton
                 android:id="@+id/switchCamera"
-                android:layout_width="52dp"
-                android:layout_height="52dp"
+                android:layout_width="54dp"
+                android:layout_height="54dp"
                 android:background="@drawable/bg_round_button"
                 android:contentDescription="@string/switch_camera"
                 android:src="@drawable/ic_switch_camera"
                 app:tint="@color/white" />
         </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/captureModeRow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="14dp"
+            android:orientation="horizontal" />
     </LinearLayout>
 
     <!-- Shown while an imported photo is on screen -->
@@ -226,7 +243,7 @@
         android:background="@drawable/bg_controls"
         android:gravity="center"
         android:orientation="horizontal"
-        android:paddingTop="20dp"
+        android:paddingTop="22dp"
         android:paddingBottom="40dp"
         android:visibility="gone">
 
@@ -234,14 +251,14 @@
             android:id="@+id/stillClose"
             style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
+            android:layout_height="52dp"
+            android:layout_marginEnd="14dp"
             android:text="@string/still_close" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/stillSave"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="52dp"
             android:text="@string/still_save" />
     </LinearLayout>
 
@@ -257,25 +274,36 @@
         android:id="@+id/permissionOverlay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/black"
+        android:background="@color/surface"
         android:gravity="center"
         android:orientation="vertical"
-        android:padding="32dp"
+        android:padding="36dp"
         android:visibility="gone">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center"
+            android:letterSpacing="-0.02"
+            android:text="@string/app_name"
+            android:textColor="@color/mc_green"
+            android:textSize="34sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:gravity="center"
             android:text="@string/permission_rationale"
-            android:textColor="@color/white"
+            android:textColor="@color/text_muted"
             android:textSize="16sp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/grantPermission"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_height="54dp"
+            android:layout_marginTop="28dp"
             android:text="@string/grant_permission" />
     </LinearLayout>
 

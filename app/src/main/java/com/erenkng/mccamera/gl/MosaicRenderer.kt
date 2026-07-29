@@ -43,8 +43,43 @@ class MosaicRenderer(private val callbacks: Callbacks) : GLSurfaceView.Renderer 
         fun onRendererError(message: String)
     }
 
-    /** What pass 2 paints into each cell. */
-    enum class Mode { BLOCKS, MAP_ART, PIXELS }
+    /**
+     * A shooting mode. Beyond how a cell is painted, each one biases the colour
+     * that goes into the block lookup, so a mode changes which blocks the scene
+     * is built from — not just how the result is tinted.
+     */
+    enum class Mode(
+        val paint: Int,
+        val tint: FloatArray,
+        val lift: Float,
+        val vignette: Float,
+        val glow: Float,
+        val wave: Float,
+    ) {
+        /** Straight block textures. */
+        BLOCKS(PAINT_TEXTURE, floatArrayOf(1f, 1f, 1f), 0f, 0f, 0f, 0f),
+
+        /** Flat block colours, the look of a Minecraft map. */
+        MAP_ART(PAINT_FLAT, floatArrayOf(1f, 1f, 1f), 0f, 0f, 0f, 0f),
+
+        /** No palette at all, just the averaged cells. */
+        PIXELS(PAINT_RAW, floatArrayOf(1f, 1f, 1f), 0f, 0f, 0f, 0f),
+
+        /** Night vision potion: shadows lifted hard, everything greened. */
+        NIGHT_VISION(PAINT_TEXTURE, floatArrayOf(0.72f, 1.28f, 0.78f), 0.85f, 0.18f, 0.20f, 0f),
+
+        /** The Nether: netherrack reds, heavy corners, glowing highlights. */
+        NETHER(PAINT_TEXTURE, floatArrayOf(1.35f, 0.82f, 0.68f), 0.12f, 0.38f, 0.30f, 0f),
+
+        /** The End: purpur and endstone, deep vignette. */
+        END(PAINT_TEXTURE, floatArrayOf(1.05f, 0.82f, 1.32f), 0.22f, 0.45f, 0.22f, 0f),
+
+        /** Glowstone: bright cells bloom like light sources. */
+        GLOWSTONE(PAINT_TEXTURE, floatArrayOf(1.18f, 1.06f, 0.78f), 0.30f, 0.10f, 0.80f, 0f),
+
+        /** Underwater: prismarine blues with a live ripple. */
+        UNDERWATER(PAINT_TEXTURE, floatArrayOf(0.70f, 1.02f, 1.28f), 0.20f, 0.32f, 0.12f, 1f),
+    }
 
     private var cameraProgram: Program? = null
     private var stillProgram: Program? = null
@@ -79,6 +114,12 @@ class MosaicRenderer(private val callbacks: Callbacks) : GLSurfaceView.Renderer 
     private var rotationDegrees = 0
     private var mirrored = false
 
+    /** The letterboxed region the mosaic is drawn into, in view pixels. */
+    private var frameLeft = 0
+    private var frameTop = 0
+    private var frameWidth = 0
+    private var frameHeight = 0
+
     private var gridWidth = 0
     private var gridHeight = 0
     private var downWidth = 0
@@ -86,6 +127,7 @@ class MosaicRenderer(private val callbacks: Callbacks) : GLSurfaceView.Renderer 
     private var lod = 0f
 
     private var hasFrame = false
+    private var startNanos = 0L
 
     @Volatile private var geometryDirty = true
     @Volatile private var frameAvailable = false
@@ -93,6 +135,7 @@ class MosaicRenderer(private val callbacks: Callbacks) : GLSurfaceView.Renderer 
 
     @Volatile private var density = DEFAULT_DENSITY
     @Volatile private var mode = Mode.BLOCKS
+    @Volatile private var aspect = AspectFormat.FULL
     @Volatile private var shadeStrength = DEFAULT_SHADE
     @Volatile private var ditherStrength = DEFAULT_DITHER
     @Volatile private var bevelStrength = 0f
@@ -129,6 +172,13 @@ class MosaicRenderer(private val callbacks: Callbacks) : GLSurfaceView.Renderer 
 
     fun setRenderMode(newMode: Mode) {
         mode = newMode
+    }
+
+    fun setAspect(format: AspectFormat) {
+        if (aspect != format) {
+            aspect = format
+            geometryDirty = true
+        }
     }
 
     fun setShadeStrength(strength: Float) {
@@ -199,7 +249,7 @@ class MosaicRenderer(private val callbacks: Callbacks) : GLSurfaceView.Renderer 
     /** Must be queued onto the render thread: needs the live EGL context. */
     fun beginRecording(newRecorder: VideoRecorder, shortSide: Int) {
         if (recorder != null) return
-        val (w, h) = VideoRecorder.sizeFor(shortSide, viewWidth, viewHeight)
+        val (w, h) = VideoRecorder.sizeFor(shortSide, frameWidth, frameHeight)
         if (!newRecorder.start(w, h)) {
             callbacks.onRecordingStarted(false)
             return
@@ -269,6 +319,7 @@ class MosaicRenderer(private val callbacks: Callbacks) : GLSurfaceView.Renderer 
         downWidth = 0
         downHeight = 0
         stillActive = false
+        startNanos = System.nanoTime()
 
         // The context is brand new, so whatever palette we had must be re-sent.
         palette?.let { pendingPalette = it }
@@ -302,10 +353,10 @@ class MosaicRenderer(private val callbacks: Callbacks) : GLSurfaceView.Renderer 
 
         if (!stillActive) consumeCameraFrame()
 
-        if (!hasFrame || palette == null || viewWidth == 0 || viewHeight == 0) {
-            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
-            return
-        }
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+
+        if (!hasFrame || palette == null || viewWidth == 0 || viewHeight == 0) return
 
         if (geometryDirty) {
             updateGeometry()
@@ -315,7 +366,13 @@ class MosaicRenderer(private val callbacks: Callbacks) : GLSurfaceView.Renderer 
         drawSourceToBuffer()
 
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
-        GLES20.glViewport(0, 0, viewWidth, viewHeight)
+        // glViewport counts from the bottom, the frame is positioned from the top.
+        GLES20.glViewport(
+            frameLeft,
+            viewHeight - frameTop - frameHeight,
+            frameWidth,
+            frameHeight,
+        )
         drawMosaic()
 
         recordFrame()
@@ -344,8 +401,10 @@ class MosaicRenderer(private val callbacks: Callbacks) : GLSurfaceView.Renderer 
     }
 
     private fun updateGeometry() {
+        updateFrame()
+
         gridWidth = density.coerceAtLeast(MIN_DENSITY)
-        gridHeight = max(1, (gridWidth.toFloat() * viewHeight / viewWidth).roundToInt())
+        gridHeight = max(1, (gridWidth.toFloat() * frameHeight / frameWidth).roundToInt())
 
         // Pick the smallest power-of-two upscale that gives us a buffer wide
         // enough to keep detail, so the mip level we sample is an exact integer.
@@ -370,11 +429,37 @@ class MosaicRenderer(private val callbacks: Callbacks) : GLSurfaceView.Renderer 
         uvMatrix = buildUvMatrix()
     }
 
-    /** Maps screen UV (y-down) to source buffer UV (y-down). */
+    /** Letterboxes the requested aspect into the view, biased toward the top. */
+    private fun updateFrame() {
+        val target = aspect.ratio
+        if (target <= 0f) {
+            frameLeft = 0
+            frameTop = 0
+            frameWidth = viewWidth
+            frameHeight = viewHeight
+            return
+        }
+
+        val viewAspect = viewWidth.toFloat() / viewHeight
+        if (viewAspect > target) {
+            frameHeight = viewHeight
+            frameWidth = (viewHeight * target).roundToInt().coerceAtMost(viewWidth)
+        } else {
+            frameWidth = viewWidth
+            frameHeight = (viewWidth / target).roundToInt().coerceAtMost(viewHeight)
+        }
+        frameLeft = (viewWidth - frameWidth) / 2
+        // Sit above centre so the controls do not crowd the shot.
+        frameTop = ((viewHeight - frameHeight) * FRAME_TOP_BIAS).roundToInt()
+    }
+
+    /** Maps frame UV (y-down) to source buffer UV (y-down). */
     private fun buildUvMatrix(): FloatArray {
         val sourceWidth = if (stillActive) stillWidth else bufferWidth
         val sourceHeight = if (stillActive) stillHeight else bufferHeight
-        if (sourceWidth == 0 || sourceHeight == 0) return Mat3.identity()
+        if (sourceWidth == 0 || sourceHeight == 0 || frameWidth == 0 || frameHeight == 0) {
+            return Mat3.identity()
+        }
 
         val rotation = if (stillActive) 0 else rotationDegrees
         val swapped = rotation == 90 || rotation == 270
@@ -383,12 +468,16 @@ class MosaicRenderer(private val callbacks: Callbacks) : GLSurfaceView.Renderer 
         } else {
             sourceWidth.toFloat() / sourceHeight
         }
-        val viewAspect = viewWidth.toFloat() / viewHeight
+        val targetAspect = frameWidth.toFloat() / frameHeight
 
-        // Centre-crop so the preview fills the screen without stretching.
+        // Centre-crop so the preview fills the frame without stretching.
         var sx = 1f
         var sy = 1f
-        if (displayAspect > viewAspect) sx = viewAspect / displayAspect else sy = displayAspect / viewAspect
+        if (displayAspect > targetAspect) {
+            sx = targetAspect / displayAspect
+        } else {
+            sy = displayAspect / targetAspect
+        }
 
         val crop = Mat3.ofRows(
             sx, 0f, 0.5f - 0.5f * sx,
@@ -399,6 +488,8 @@ class MosaicRenderer(private val callbacks: Callbacks) : GLSurfaceView.Renderer 
         } else {
             Mat3.identity()
         }
+        // Display space -> buffer space. Rotating the buffer clockwise by
+        // `rotation` is what makes it upright, so this is that rotation inverted.
         val rotate = when (rotation) {
             90 -> Mat3.ofRows(0f, 1f, 0f, -1f, 0f, 1f)
             180 -> Mat3.ofRows(-1f, 0f, 1f, 0f, -1f, 1f)
@@ -473,6 +564,7 @@ class MosaicRenderer(private val callbacks: Callbacks) : GLSurfaceView.Renderer 
 
     private fun drawMosaic() {
         val program = mosaicProgram ?: return
+        val active = mode
         program.use()
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
@@ -499,7 +591,27 @@ class MosaicRenderer(private val callbacks: Callbacks) : GLSurfaceView.Renderer 
         GLES20.glUniform1f(program.uniform("uDither"), ditherStrength)
         GLES20.glUniform1f(program.uniform("uBevel"), bevelStrength)
         GLES20.glUniform1f(program.uniform("uOutline"), outlineStrength)
-        GLES20.glUniform1i(program.uniform("uMode"), mode.ordinal)
+
+        GLES20.glUniform1i(program.uniform("uPaint"), active.paint)
+        GLES20.glUniform3f(
+            program.uniform("uTint"),
+            active.tint[0], active.tint[1], active.tint[2],
+        )
+        GLES20.glUniform1f(program.uniform("uLift"), active.lift)
+        GLES20.glUniform1f(program.uniform("uVignette"), active.vignette)
+        GLES20.glUniform1f(program.uniform("uGlow"), active.glow)
+        GLES20.glUniform1f(program.uniform("uWave"), active.wave)
+        GLES20.glUniform1f(
+            program.uniform("uTime"),
+            (System.nanoTime() - startNanos) / 1_000_000_000f,
+        )
+
+        val frameAspect = if (frameHeight > 0) frameWidth.toFloat() / frameHeight else 1f
+        GLES20.glUniform1f(program.uniform("uFrameAspect"), frameAspect)
+        GLES20.glUniform1f(
+            program.uniform("uCorner"),
+            if (aspect == AspectFormat.FULL) 0f else CORNER_RADIUS,
+        )
 
         drawQuad(program)
     }
@@ -535,19 +647,23 @@ class MosaicRenderer(private val callbacks: Callbacks) : GLSurfaceView.Renderer 
      * renders the mosaic into an off-screen buffer at block-native resolution.
      */
     private fun capture(pixelsPerBlock: Int) {
+        var width: Int
+        var height: Int
         if (pixelsPerBlock <= 0) {
-            readPixels(0, viewWidth, viewHeight)
-            return
+            width = frameWidth
+            height = frameHeight
+        } else {
+            width = gridWidth * pixelsPerBlock
+            height = gridHeight * pixelsPerBlock
+            val longest = max(width, height)
+            if (longest > MAX_CAPTURE_SIDE) {
+                val scale = MAX_CAPTURE_SIDE.toFloat() / longest
+                width = (width * scale).toInt()
+                height = (height * scale).toInt()
+            }
         }
-
-        var width = gridWidth * pixelsPerBlock
-        var height = gridHeight * pixelsPerBlock
-        val longest = max(width, height)
-        if (longest > MAX_CAPTURE_SIDE) {
-            val scale = MAX_CAPTURE_SIDE.toFloat() / longest
-            width = (width * scale).toInt().coerceAtLeast(1)
-            height = (height * scale).toInt().coerceAtLeast(1)
-        }
+        width = width.coerceAtLeast(1)
+        height = height.coerceAtLeast(1)
 
         val ids = IntArray(2)
         GLES20.glGenTextures(1, ids, 0)
@@ -575,7 +691,6 @@ class MosaicRenderer(private val callbacks: Callbacks) : GLSurfaceView.Renderer 
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
         GLES20.glDeleteFramebuffers(1, ids, 1)
         GLES20.glDeleteTextures(1, ids, 0)
-        GLES20.glViewport(0, 0, viewWidth, viewHeight)
     }
 
     private fun readPixels(framebuffer: Int, width: Int, height: Int) {
@@ -607,6 +722,10 @@ class MosaicRenderer(private val callbacks: Callbacks) : GLSurfaceView.Renderer 
     companion object {
         private const val TAG = "MosaicRenderer"
 
+        const val PAINT_TEXTURE = 0
+        const val PAINT_FLAT = 1
+        const val PAINT_RAW = 2
+
         const val MIN_DENSITY = 8
         const val DEFAULT_DENSITY = 48
         const val DEFAULT_SHADE = 0.5f
@@ -616,6 +735,12 @@ class MosaicRenderer(private val callbacks: Callbacks) : GLSurfaceView.Renderer 
         private const val DOWNSAMPLE_TARGET = 512
 
         private const val MAX_CAPTURE_SIDE = 4096
+
+        /** Where a letterboxed frame sits in the free vertical space. */
+        private const val FRAME_TOP_BIAS = 0.32f
+
+        /** Corner rounding of a letterboxed frame, in half-height units. */
+        private const val CORNER_RADIUS = 0.08f
 
         val DENSITY_STEPS = intArrayOf(8, 12, 16, 24, 32, 48, 64, 96, 128, 192)
 

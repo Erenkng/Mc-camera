@@ -42,7 +42,6 @@ class SettingsSheet(
         val view = LayoutInflater.from(dialog.context).inflate(R.layout.sheet_settings, null)
         dialog.setContentView(view)
 
-        bindMode(view)
         bindDensity(view)
         bindStyle(view)
         bindColour(view)
@@ -53,25 +52,6 @@ class SettingsSheet(
     }
 
     // ------------------------------------------------------------------ look
-
-    private fun bindMode(view: View) {
-        val group = view.findViewById<MaterialButtonToggleGroup>(R.id.renderModeGroup)
-        val checked = when (settings.mode) {
-            MosaicRenderer.Mode.BLOCKS -> R.id.modeBlocks
-            MosaicRenderer.Mode.MAP_ART -> R.id.modeMapArt
-            MosaicRenderer.Mode.PIXELS -> R.id.modePixels
-        }
-        group.check(checked)
-        group.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (!isChecked) return@addOnButtonCheckedListener
-            settings.mode = when (checkedId) {
-                R.id.modeMapArt -> MosaicRenderer.Mode.MAP_ART
-                R.id.modePixels -> MosaicRenderer.Mode.PIXELS
-                else -> MosaicRenderer.Mode.BLOCKS
-            }
-            callbacks.onSettingsChanged()
-        }
-    }
 
     private fun bindDensity(view: View) {
         val steps = MosaicRenderer.DENSITY_STEPS

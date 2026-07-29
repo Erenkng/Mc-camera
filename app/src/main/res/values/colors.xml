@@ -2,9 +2,25 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="mc_green">#FF5FA83C</color>
+
+    <!-- Expressive palette: a near-black with a green cast so the grass green
+         reads as the app's voice rather than as a stray accent. -->
+    <color name="surface">#FF0B0F0C</color>
+    <color name="surface_raised">#FF171D18</color>
+    <color name="surface_dim">#FF232A24</color>
+
+    <color name="mc_green">#FF6BBF3F</color>
     <color name="mc_green_dark">#FF3E6E27</color>
+    <color name="mc_green_soft">#FFB7E39A</color>
+    <color name="mc_gold">#FFF8C24A</color>
     <color name="mc_dirt">#FF866043</color>
-    <color name="scrim">#66000000</color>
-    <color name="control_bg">#55000000</color>
+    <color name="record_red">#FFE53935</color>
+
+    <color name="text_primary">#FFF2F5F0</color>
+    <color name="text_muted">#FFA8B2A4</color>
+
+    <color name="control_bg">#59101410</color>
+    <color name="glass">#66101410</color>
+    <color name="glass_strong">#B3101410</color>
+    <color name="chip_idle">#59FFFFFF</color>
 </resources>

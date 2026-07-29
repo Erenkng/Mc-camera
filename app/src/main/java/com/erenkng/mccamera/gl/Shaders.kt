@@ -100,7 +100,20 @@ uniform float uShade;     // 0..1, how far the block is pushed toward the scene'
 uniform float uDither;    // 0..1, ordered dithering amount
 uniform float uBevel;     // 0..1, fake Minecraft lighting on the cell edges
 uniform float uOutline;   // 0..1, dark grid line between cells
-uniform int uMode;        // 0 blocks, 1 map art (flat colour), 2 raw pixels
+uniform int uPaint;       // 0 block texture, 1 flat block colour, 2 raw average
+
+// Per-mode look: these bias which block is chosen, not just the final pixel,
+// which is what makes the modes feel like different worlds rather than filters.
+uniform vec3 uTint;
+uniform float uLift;      // shadow lift, the night-vision potion effect
+uniform float uVignette;
+uniform float uGlow;      // emissive bloom on the brightest cells
+uniform float uWave;      // underwater ripple
+uniform float uTime;
+
+// Rounded letterbox frame
+uniform float uFrameAspect;
+uniform float uCorner;
 
 in vec2 vUv;
 out vec4 fragColor;
@@ -119,59 +132,88 @@ vec2 lutCoord(vec3 c) {
     return vec2(u, v);
 }
 
+/** Signed distance to the rounded frame, negative inside. */
+float frameMask() {
+    if (uCorner <= 0.0) return 1.0;
+    vec2 p = (vUv - 0.5) * 2.0;
+    p.x *= uFrameAspect;
+    vec2 half2 = vec2(uFrameAspect, 1.0);
+    vec2 q = abs(p) - (half2 - uCorner);
+    float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - uCorner;
+    return 1.0 - smoothstep(-0.006, 0.006, d);
+}
+
 void main() {
-    vec2 scaled = vUv * uGrid;
+    vec2 uv = vUv;
+    if (uWave > 0.0) {
+        uv.x += sin(uv.y * 18.0 + uTime * 1.7) * 0.006 * uWave;
+        uv.y += cos(uv.x * 14.0 + uTime * 1.2) * 0.004 * uWave;
+        uv = clamp(uv, 0.0, 1.0);
+    }
+
+    vec2 scaled = uv * uGrid;
     vec2 cell = floor(scaled);
     vec3 avg = textureLod(sDown, (cell + 0.5) / uGrid, uLod).rgb;
 
-    if (uMode == 2) {
-        fragColor = vec4(avg, 1.0);
-        return;
-    }
-
-    vec3 wanted = avg;
-    if (uDither > 0.0) {
-        int bx = int(mod(cell.x, 4.0));
-        int by = int(mod(cell.y, 4.0));
-        float t = (float(BAYER[by * 4 + bx]) + 0.5) / 16.0 - 0.5;
-        wanted = clamp(wanted + t * uDither, 0.0, 1.0);
-    }
-
-    vec4 entry = texture(sLut, lutCoord(wanted));
-    vec2 tile = floor(entry.rg * 255.0 + 0.5);
-
-    // Keep the sample well inside the tile so nearest filtering never bleeds
-    // into the neighbouring block of the atlas.
-    vec2 local = clamp(scaled - cell, 0.0008, 0.9992);
-
-    vec3 block;
-    if (uMode == 1) {
-        float index = tile.y * uTiles + tile.x;
-        block = texture(sPalette, vec2((index + 0.5) / uPaletteSize, 0.5)).rgb;
-    } else {
-        vec2 atlasUv = (tile + vec2(local.x, 1.0 - local.y)) / uTiles;
-        block = texture(sAtlas, atlasUv).rgb;
-    }
+    if (uLift > 0.0) avg = mix(avg, pow(avg, vec3(0.45)), uLift);
+    avg = clamp(avg * uTint, 0.0, 1.0);
 
     float avgLuma = dot(avg, vec3(0.299, 0.587, 0.114));
-    float shade = mix(1.0, clamp(avgLuma / max(entry.b, 0.05), 0.55, 1.7), uShade);
-    block *= shade;
+    vec3 block;
 
-    if (uBevel > 0.0) {
-        // Light from the top-left, shadow bottom-right: reads as a raised cube.
-        float lit = step(0.88, local.y) + step(local.x, 0.12);
-        float dark = step(local.y, 0.12) + step(0.88, local.x);
-        block *= 1.0 + uBevel * 0.20 * (min(lit, 1.0) - min(dark, 1.0));
+    if (uPaint == 2) {
+        block = avg;
+    } else {
+        vec3 wanted = avg;
+        if (uDither > 0.0) {
+            int bx = int(mod(cell.x, 4.0));
+            int by = int(mod(cell.y, 4.0));
+            float t = (float(BAYER[by * 4 + bx]) + 0.5) / 16.0 - 0.5;
+            wanted = clamp(wanted + t * uDither, 0.0, 1.0);
+        }
+
+        vec4 entry = texture(sLut, lutCoord(wanted));
+        vec2 tile = floor(entry.rg * 255.0 + 0.5);
+
+        // Keep the sample well inside the tile so nearest filtering never bleeds
+        // into the neighbouring block of the atlas.
+        vec2 local = clamp(scaled - cell, 0.0008, 0.9992);
+
+        if (uPaint == 1) {
+            float index = tile.y * uTiles + tile.x;
+            block = texture(sPalette, vec2((index + 0.5) / uPaletteSize, 0.5)).rgb;
+        } else {
+            vec2 atlasUv = (tile + vec2(local.x, 1.0 - local.y)) / uTiles;
+            block = texture(sAtlas, atlasUv).rgb;
+        }
+
+        block *= mix(1.0, clamp(avgLuma / max(entry.b, 0.05), 0.55, 1.7), uShade);
+
+        if (uBevel > 0.0) {
+            // Light from the top-left, shadow bottom-right: reads as a raised cube.
+            float lit = step(0.88, local.y) + step(local.x, 0.12);
+            float dark = step(local.y, 0.12) + step(0.88, local.x);
+            block *= 1.0 + uBevel * 0.20 * (min(lit, 1.0) - min(dark, 1.0));
+        }
+
+        if (uOutline > 0.0) {
+            float w = 1.0 / 16.0;
+            float edge = min(1.0, step(local.x, w) + step(1.0 - w, local.x) +
+                                  step(local.y, w) + step(1.0 - w, local.y));
+            block = mix(block, block * 0.45, uOutline * edge);
+        }
     }
 
-    if (uOutline > 0.0) {
-        float w = 1.0 / 16.0;
-        float edge = min(1.0, step(local.x, w) + step(1.0 - w, local.x) +
-                              step(local.y, w) + step(1.0 - w, local.y));
-        block = mix(block, block * 0.45, uOutline * edge);
+    if (uGlow > 0.0) {
+        block += block * smoothstep(0.55, 1.0, avgLuma) * uGlow;
     }
 
-    fragColor = vec4(clamp(block, 0.0, 1.0), 1.0);
+    if (uVignette > 0.0) {
+        float d = distance(vUv, vec2(0.5));
+        block *= 1.0 - uVignette * smoothstep(0.32, 0.85, d);
+    }
+
+    fragColor = vec4(clamp(block, 0.0, 1.0) * frameMask(), 1.0);
 }
 """
 }

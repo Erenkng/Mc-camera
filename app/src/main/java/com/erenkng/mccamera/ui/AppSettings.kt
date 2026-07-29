@@ -3,6 +3,7 @@ package com.erenkng.mccamera.ui
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import com.erenkng.mccamera.gl.AspectFormat
 import com.erenkng.mccamera.gl.MosaicRenderer
 import com.erenkng.mccamera.palette.BlockPalette
 import com.erenkng.mccamera.palette.PackLibrary
@@ -23,6 +24,14 @@ class AppSettings(context: Context) {
             MosaicRenderer.Mode.BLOCKS
         }
         set(value) = prefs.edit { putInt(KEY_MODE, value.ordinal) }
+
+    var aspect: AspectFormat
+        get() = AspectFormat.of(prefs.getInt(KEY_ASPECT, 0))
+        set(value) = prefs.edit { putInt(KEY_ASPECT, value.ordinal) }
+
+    var videoMode: Boolean
+        get() = prefs.getBoolean(KEY_VIDEO_MODE, false)
+        set(value) = prefs.edit { putBoolean(KEY_VIDEO_MODE, value) }
 
     var shade: Float
         get() = prefs.getFloat(KEY_SHADE, MosaicRenderer.DEFAULT_SHADE)
@@ -87,6 +96,8 @@ class AppSettings(context: Context) {
     private companion object {
         const val KEY_DENSITY = "density"
         const val KEY_MODE = "mode"
+        const val KEY_ASPECT = "aspect"
+        const val KEY_VIDEO_MODE = "video_mode"
         const val KEY_SHADE = "shade_strength"
         const val KEY_DITHER = "dither"
         const val KEY_BEVEL = "bevel"

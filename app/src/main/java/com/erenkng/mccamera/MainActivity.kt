@@ -12,11 +12,12 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import android.view.HapticFeedbackConstants
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
+import android.widget.HorizontalScrollView
 import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
@@ -26,6 +27,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.erenkng.mccamera.camera.CameraController
+import com.erenkng.mccamera.gl.AspectFormat
 import com.erenkng.mccamera.gl.MosaicRenderer
 import com.erenkng.mccamera.palette.BlockPalette
 import com.erenkng.mccamera.palette.DefaultPack
@@ -33,12 +35,17 @@ import com.erenkng.mccamera.palette.PackLibrary
 import com.erenkng.mccamera.palette.PaletteBuilder
 import com.erenkng.mccamera.palette.ResourcePackLoader
 import com.erenkng.mccamera.ui.AppSettings
+import com.erenkng.mccamera.ui.ChipStrip
+import com.erenkng.mccamera.ui.GallerySheet
+import com.erenkng.mccamera.ui.Motion
 import com.erenkng.mccamera.ui.SettingsSheet
+import com.erenkng.mccamera.ui.ShutterButton
 import com.erenkng.mccamera.util.ImageLoader
 import com.erenkng.mccamera.util.ImageSaver
+import com.erenkng.mccamera.util.MediaLibrary
 import com.erenkng.mccamera.video.VideoRecorder
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.button.MaterialButtonToggleGroup
+import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -61,15 +68,23 @@ class MainActivity :
     private lateinit var progress: ProgressBar
     private lateinit var controls: View
     private lateinit var stillBar: View
+    private lateinit var topBar: View
+    private lateinit var formatRow: View
     private lateinit var recordBadge: View
+    private lateinit var recordDot: View
     private lateinit var recordTime: TextView
     private lateinit var countdown: TextView
     private lateinit var zoomLabel: TextView
     private lateinit var hint: TextView
-    private lateinit var shutter: ImageButton
+    private lateinit var shutter: ShutterButton
     private lateinit var torchButton: ImageButton
     private lateinit var timerButton: ImageButton
     private lateinit var freezeButton: ImageButton
+    private lateinit var galleryThumb: ShapeableImageView
+
+    private lateinit var modeStrip: ChipStrip
+    private lateinit var formatStrip: ChipStrip
+    private lateinit var captureModeStrip: ChipStrip
 
     private val handler = Handler(Looper.getMainLooper())
 
@@ -112,21 +127,9 @@ class MainActivity :
         setContentView(R.layout.activity_main)
 
         settings = AppSettings(this)
+        videoMode = settings.videoMode
 
-        root = findViewById(R.id.root)
-        permissionOverlay = findViewById(R.id.permissionOverlay)
-        progress = findViewById(R.id.progress)
-        controls = findViewById(R.id.controlsContainer)
-        stillBar = findViewById(R.id.stillBar)
-        recordBadge = findViewById(R.id.recordBadge)
-        recordTime = findViewById(R.id.recordTime)
-        countdown = findViewById(R.id.countdown)
-        zoomLabel = findViewById(R.id.zoomLabel)
-        hint = findViewById(R.id.hint)
-        shutter = findViewById(R.id.shutter)
-        torchButton = findViewById(R.id.torch)
-        timerButton = findViewById(R.id.timer)
-        freezeButton = findViewById(R.id.freeze)
+        bindViews()
 
         renderer = MosaicRenderer(this)
         applyRenderSettings()
@@ -141,15 +144,38 @@ class MainActivity :
         camera = CameraController(this, this, this)
         camera.setDeviceRotation(ContextCompat.getDisplayOrDefault(this).rotation)
 
+        buildStrips()
         wireControls()
         setUpGestures()
         loadPalette()
+        refreshGalleryThumb()
 
         if (!settings.hintShown) {
-            hint.visibility = View.VISIBLE
             settings.hintShown = true
-            handler.postDelayed({ hint.visibility = View.GONE }, 6_000)
+            Motion.fade(hint, true)
+            handler.postDelayed({ Motion.fade(hint, false) }, 6_500)
         }
+    }
+
+    private fun bindViews() {
+        root = findViewById(R.id.root)
+        permissionOverlay = findViewById(R.id.permissionOverlay)
+        progress = findViewById(R.id.progress)
+        controls = findViewById(R.id.controlsContainer)
+        stillBar = findViewById(R.id.stillBar)
+        topBar = findViewById(R.id.topBar)
+        formatRow = findViewById(R.id.formatRow)
+        recordBadge = findViewById(R.id.recordBadge)
+        recordDot = findViewById(R.id.recordDot)
+        recordTime = findViewById(R.id.recordTime)
+        countdown = findViewById(R.id.countdown)
+        zoomLabel = findViewById(R.id.zoomLabel)
+        hint = findViewById(R.id.hint)
+        shutter = findViewById(R.id.shutter)
+        torchButton = findViewById(R.id.torch)
+        timerButton = findViewById(R.id.timer)
+        freezeButton = findViewById(R.id.freeze)
+        galleryThumb = findViewById(R.id.gallery)
     }
 
     override fun onResume() {
@@ -168,6 +194,7 @@ class MainActivity :
             }
             else -> permissionOverlay.visibility = View.VISIBLE
         }
+        refreshGalleryThumb()
     }
 
     override fun onPause() {
@@ -190,46 +217,91 @@ class MainActivity :
         camera.setDeviceRotation(ContextCompat.getDisplayOrDefault(this).rotation)
     }
 
+    // ----------------------------------------------------------- chip strips
+
+    private fun buildStrips() {
+        val modes = MosaicRenderer.Mode.entries
+        modeStrip = ChipStrip(
+            findViewById(R.id.modeChips),
+            findViewById<HorizontalScrollView>(R.id.modeScroller),
+        ) { index ->
+            settings.mode = modes[index]
+            renderer.setRenderMode(modes[index])
+            glView.requestRender()
+        }
+        modeStrip.setItems(
+            resources.getStringArray(R.array.mode_names).toList(),
+            modes.indexOf(settings.mode),
+        )
+
+        val formats = AspectFormat.entries
+        formatStrip = ChipStrip(
+            findViewById<LinearLayout>(R.id.formatChips),
+            findViewById<HorizontalScrollView>(R.id.formatRow),
+        ) { index ->
+            settings.aspect = formats[index]
+            renderer.setAspect(formats[index])
+            glView.requestRender()
+        }
+        formatStrip.setItems(formats.map { it.label }, formats.indexOf(settings.aspect))
+
+        captureModeStrip = ChipStrip(findViewById<LinearLayout>(R.id.captureModeRow), null) { index ->
+            if (recording) return@ChipStrip
+            videoMode = index == 1
+            settings.videoMode = videoMode
+            updateShutterState()
+        }
+        captureModeStrip.setItems(
+            listOf(getString(R.string.mode_photo), getString(R.string.mode_video)),
+            if (videoMode) 1 else 0,
+        )
+        updateShutterState()
+    }
+
     // ------------------------------------------------------------- controls
 
     private fun wireControls() {
         shutter.setOnClickListener {
-            it.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+            Motion.tick(it)
             onShutter()
         }
 
         findViewById<ImageButton>(R.id.settings).setOnClickListener {
+            Motion.tick(it)
             SettingsSheet(this, settings, this).show()
         }
 
         findViewById<ImageButton>(R.id.switchCamera).setOnClickListener {
+            Motion.tick(it)
             if (recording) {
                 toast(getString(R.string.busy_recording))
             } else if (camera.hasFrontCamera) {
+                it.animate().rotationBy(180f).setDuration(320).start()
                 camera.switchLens()
             } else {
                 toast(getString(R.string.no_front_camera))
             }
         }
 
-        findViewById<ImageButton>(R.id.gallery).setOnClickListener {
-            photoLauncher.launch(
-                PickVisualMediaRequest.Builder()
-                    .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                    .build()
-            )
+        galleryThumb.setOnClickListener {
+            Motion.tick(it)
+            GallerySheet(this) { pickPhoto() }.show()
         }
 
         torchButton.setOnClickListener {
+            Motion.tick(it)
             if (!camera.hasFlash) {
                 toast(getString(R.string.no_flash))
             } else {
                 val on = camera.toggleTorch()
-                torchButton.setImageResource(if (on) R.drawable.ic_flash_on else R.drawable.ic_flash_off)
+                torchButton.setImageResource(
+                    if (on) R.drawable.ic_flash_on else R.drawable.ic_flash_off
+                )
             }
         }
 
         timerButton.setOnClickListener {
+            Motion.tick(it)
             settings.timerSeconds = when (settings.timerSeconds) {
                 0 -> 3
                 3 -> 10
@@ -239,30 +311,32 @@ class MainActivity :
         }
         updateTimerButton()
 
+        findViewById<ImageButton>(R.id.format).setOnClickListener {
+            Motion.tick(it)
+            Motion.fade(formatRow, formatRow.visibility != View.VISIBLE)
+        }
+
         freezeButton.setOnClickListener {
-            val frozen = freezeButton.isSelected.not()
-            freezeButton.isSelected = frozen
+            Motion.tick(it)
+            val frozen = !it.isSelected
+            it.isSelected = frozen
+            it.alpha = if (frozen) 1f else 0.75f
             renderer.setFrozen(frozen)
             glView.requestRender()
             toast(getString(if (frozen) R.string.frozen else R.string.unfrozen))
         }
-
-        findViewById<MaterialButtonToggleGroup>(R.id.modeGroup).apply {
-            check(if (videoMode) R.id.modeVideo else R.id.modePhoto)
-            addOnButtonCheckedListener { _, checkedId, isChecked ->
-                if (!isChecked || recording) return@addOnButtonCheckedListener
-                videoMode = checkedId == R.id.modeVideo
-                shutter.setImageResource(
-                    if (videoMode) R.drawable.ic_record else R.drawable.ic_shutter
-                )
-            }
-        }
+        freezeButton.alpha = 0.75f
 
         findViewById<MaterialButton>(R.id.stillSave).setOnClickListener { capture() }
         findViewById<MaterialButton>(R.id.stillClose).setOnClickListener { exitStillMode() }
         findViewById<MaterialButton>(R.id.grantPermission).setOnClickListener {
             permissionLauncher.launch(Manifest.permission.CAMERA)
         }
+
+        listOf<View>(
+            torchButton, timerButton, freezeButton, galleryThumb,
+            findViewById(R.id.settings), findViewById(R.id.format), findViewById(R.id.switchCamera),
+        ).forEach { Motion.springy(it) }
     }
 
     private fun setUpGestures() {
@@ -318,6 +392,14 @@ class MainActivity :
         if (seconds > 0) startCountdown(seconds) else capture()
     }
 
+    private fun updateShutterState() {
+        shutter.state = when {
+            recording -> ShutterButton.State.RECORDING
+            videoMode -> ShutterButton.State.VIDEO_IDLE
+            else -> ShutterButton.State.PHOTO
+        }
+    }
+
     // --------------------------------------------------------------- timer
 
     private fun startCountdown(seconds: Int) {
@@ -333,6 +415,10 @@ class MainActivity :
             return
         }
         countdown.text = countdownRemaining.toString()
+        countdown.scaleX = 1.4f
+        countdown.scaleY = 1.4f
+        countdown.alpha = 0f
+        countdown.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(280).start()
         countdownRemaining--
         handler.postDelayed({ tickCountdown() }, 1_000)
     }
@@ -358,8 +444,9 @@ class MainActivity :
 
     private fun stopRecording() {
         recording = false
+        updateShutterState()
         handler.removeCallbacks(recordTicker)
-        recordBadge.visibility = View.GONE
+        Motion.fade(recordBadge, false)
         glView.queueEvent { renderer.endRecording() }
         glView.requestRender()
     }
@@ -368,6 +455,8 @@ class MainActivity :
         override fun run() {
             val elapsed = (SystemClock.elapsedRealtime() - recordStartedAt) / 1000
             recordTime.text = String.format(Locale.US, "%02d:%02d", elapsed / 60, elapsed % 60)
+            recordDot.animate().alpha(if (recordDot.alpha > 0.5f) 0.25f else 1f)
+                .setDuration(450).start()
             handler.postDelayed(this, 500)
         }
     }
@@ -391,6 +480,8 @@ class MainActivity :
             val size = "${bitmap.width}x${bitmap.height}"
             bitmap.recycle()
             if (uri != null) {
+                flashScreen()
+                refreshGalleryThumb()
                 showSaved(getString(R.string.saved_photo, size), uri, "image/*")
             } else {
                 toast(getString(R.string.save_failed))
@@ -405,8 +496,9 @@ class MainActivity :
                 return@runOnUiThread
             }
             recording = true
+            updateShutterState()
             recordStartedAt = SystemClock.elapsedRealtime()
-            recordBadge.visibility = View.VISIBLE
+            Motion.fade(recordBadge, true)
             handler.post(recordTicker)
         }
     }
@@ -414,6 +506,7 @@ class MainActivity :
     override fun onRecordingStopped(uri: Uri?) {
         runOnUiThread {
             if (uri != null) {
+                refreshGalleryThumb()
                 showSaved(getString(R.string.saved_video), uri, "video/*")
             } else {
                 toast(getString(R.string.save_failed))
@@ -433,14 +526,14 @@ class MainActivity :
     }
 
     override fun onCameraReady(hasFlash: Boolean, hasFront: Boolean, zoomRatio: Float) {
-        torchButton.alpha = if (hasFlash) 1f else 0.35f
+        torchButton.alpha = if (hasFlash) 1f else 0.3f
         torchButton.setImageResource(R.drawable.ic_flash_off)
         onZoomChanged(zoomRatio)
     }
 
     override fun onZoomChanged(ratio: Float) {
         zoomLabel.text = String.format(Locale.US, "%.1fx", ratio)
-        zoomLabel.visibility = if (ratio > 1.05f) View.VISIBLE else View.GONE
+        Motion.fade(zoomLabel, ratio > 1.05f)
     }
 
     override fun onCameraError(message: String) {
@@ -494,6 +587,14 @@ class MainActivity :
 
     // ----------------------------------------------------------- still mode
 
+    private fun pickPhoto() {
+        photoLauncher.launch(
+            PickVisualMediaRequest.Builder()
+                .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                .build()
+        )
+    }
+
     private fun importPhoto(uri: Uri) {
         setBusy(true)
         lifecycleScope.launch {
@@ -507,16 +608,16 @@ class MainActivity :
             camera.stop()
             renderer.setStillImage(bitmap)
             glView.requestRender()
-            controls.visibility = View.GONE
-            stillBar.visibility = View.VISIBLE
+            Motion.fade(controls, false)
+            Motion.fade(stillBar, true)
         }
     }
 
     private fun exitStillMode() {
         stillMode = false
         renderer.clearStillImage()
-        stillBar.visibility = View.GONE
-        controls.visibility = View.VISIBLE
+        Motion.fade(stillBar, false)
+        Motion.fade(controls, true)
         activeTexture?.let { if (hasCameraPermission()) camera.start(it) }
         glView.requestRender()
     }
@@ -546,6 +647,7 @@ class MainActivity :
     private fun applyRenderSettings() {
         renderer.setDensity(settings.density)
         renderer.setRenderMode(settings.mode)
+        renderer.setAspect(settings.aspect)
         renderer.setShadeStrength(settings.shade)
         renderer.setDitherStrength(settings.dither)
         renderer.setBevelStrength(if (settings.bevel) 1f else 0f)
@@ -559,8 +661,42 @@ class MainActivity :
 
     // ------------------------------------------------------------------- ui
 
+    /** A quick white wash, so a capture is felt as well as heard. */
+    private fun flashScreen() {
+        val flash = View(this).apply {
+            setBackgroundColor(0xFFFFFFFF.toInt())
+            alpha = 0f
+        }
+        (root as android.view.ViewGroup).addView(
+            flash,
+            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+        )
+        flash.animate().alpha(0.85f).setDuration(60).withEndAction {
+            flash.animate().alpha(0f).setDuration(220)
+                .withEndAction { (root as android.view.ViewGroup).removeView(flash) }
+                .start()
+        }.start()
+    }
+
+    private fun refreshGalleryThumb() {
+        lifecycleScope.launch {
+            val thumb = withContext(Dispatchers.IO) {
+                MediaLibrary.recent(this@MainActivity, limit = 1).firstOrNull()?.let {
+                    MediaLibrary.thumbnail(this@MainActivity, it, 160)
+                }
+            }
+            if (thumb != null) {
+                galleryThumb.setPadding(0, 0, 0, 0)
+                galleryThumb.imageTintList = null
+                galleryThumb.setImageBitmap(thumb)
+            }
+        }
+    }
+
     private fun showSaved(message: String, uri: Uri, mime: String) {
         Snackbar.make(root, message, Snackbar.LENGTH_LONG)
+            .setAnchorView(controls)
             .setAction(R.string.show) {
                 val intent = Intent(Intent.ACTION_VIEW).apply {
                     setDataAndType(uri, mime)
@@ -580,12 +716,14 @@ class MainActivity :
                 else -> R.drawable.ic_timer_off
             }
         )
+        timerButton.alpha = if (settings.timerSeconds == 0) 0.75f else 1f
     }
 
     private fun setBusy(value: Boolean) {
         busy = value
         progress.visibility = if (value) View.VISIBLE else View.GONE
         controls.alpha = if (value) 0.4f else 1f
+        topBar.alpha = if (value) 0.4f else 1f
         shutter.isEnabled = !value
     }
 

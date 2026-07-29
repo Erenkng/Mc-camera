@@ -1,12 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.MCCamera" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.MCCamera" parent="Theme.Material3.Dark.NoActionBar">
         <item name="colorPrimary">@color/mc_green</item>
-        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorOnPrimary">#FF08120A</item>
         <item name="colorPrimaryContainer">@color/mc_green_dark</item>
-        <item name="colorSecondary">@color/mc_dirt</item>
+        <item name="colorOnPrimaryContainer">@color/mc_green_soft</item>
+        <item name="colorSecondary">@color/mc_gold</item>
+        <item name="colorError">@color/record_red</item>
+
+        <item name="android:colorBackground">@color/surface</item>
+        <item name="colorSurface">@color/surface_raised</item>
+        <item name="colorSurfaceContainerLow">@color/surface_raised</item>
+        <item name="colorSurfaceContainerHigh">@color/surface_dim</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/text_muted</item>
+
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowTranslucentStatus">true</item>
+
+        <item name="bottomSheetDialogTheme">@style/Theme.MCCamera.BottomSheet</item>
+    </style>
+
+    <style name="Theme.MCCamera.BottomSheet" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/MCCamera.BottomSheet</item>
+    </style>
+
+    <style name="MCCamera.BottomSheet" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="backgroundTint">@color/surface_raised</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeSheet</item>
+    </style>
+
+    <style name="ShapeSheet" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">30dp</item>
+        <item name="cornerSizeTopRight">30dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
     </style>
 </resources>

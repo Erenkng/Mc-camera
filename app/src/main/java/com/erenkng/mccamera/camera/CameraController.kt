@@ -63,6 +63,7 @@ class CameraController(
         private set
 
     private var targetRotation = Surface.ROTATION_0
+    private var bufferSize: Size? = null
 
     /** Safe to call again after a resume or a surface recreation. */
     fun start(texture: SurfaceTexture) {
@@ -109,6 +110,29 @@ class CameraController(
     fun setDeviceRotation(rotation: Int) {
         targetRotation = rotation
         preview?.targetRotation = rotation
+        publishTransform()
+    }
+
+    /**
+     * Tells the renderer how the incoming buffer has to be turned to look
+     * upright on screen.
+     *
+     * The rotation comes from [androidx.camera.core.CameraInfo] rather than only
+     * from the surface request's transformation callback: that callback is
+     * asynchronous and, if it never arrives, the renderer is left with an
+     * identity transform, which shows the sensor's landscape frame stretched
+     * across a portrait screen.
+     */
+    private fun publishTransform() {
+        val size = bufferSize ?: return
+        val info = camera?.cameraInfo ?: return
+        val mirror = lensFacing == CameraSelector.LENS_FACING_FRONT
+        listener.onCameraTransform(
+            size.width,
+            size.height,
+            info.getSensorRotationDegrees(targetRotation),
+            mirror,
+        )
     }
 
     fun toggleTorch(): Boolean {
@@ -177,40 +201,37 @@ class CameraController(
             .build()
         preview = newPreview
 
-        val mirror = lensFacing == CameraSelector.LENS_FACING_FRONT
+        val bound = try {
+            cameraProvider.unbindAll()
+            cameraProvider.bindToLifecycle(lifecycleOwner, selector, newPreview)
+        } catch (e: Exception) {
+            Log.e(TAG, "bindToLifecycle başarısız", e)
+            listener.onCameraError("Kamera bağlanamadı: ${e.message}")
+            return
+        }
+
+        camera = bound
+        hasFlash = bound.cameraInfo.hasFlashUnit()
+        torchOn = false
+        listener.onCameraReady(hasFlash, hasFrontCamera, zoomRatio())
+
+        // Bound before the provider is attached, so the callback below can read
+        // the camera's sensor orientation straight away.
         newPreview.setSurfaceProvider(executor) { request ->
             val resolution = request.resolution
             texture.setDefaultBufferSize(resolution.width, resolution.height)
+            bufferSize = resolution
+            publishTransform()
 
             surface?.release()
             val newSurface = Surface(texture)
             surface = newSurface
 
-            request.setTransformationInfoListener(executor) { info ->
-                listener.onCameraTransform(
-                    resolution.width,
-                    resolution.height,
-                    info.rotationDegrees,
-                    mirror,
-                )
-            }
             request.provideSurface(newSurface, executor) { result ->
                 if (surface === newSurface) surface = null
                 newSurface.release()
                 Log.d(TAG, "Surface bırakıldı: ${result.resultCode}")
             }
-        }
-
-        try {
-            cameraProvider.unbindAll()
-            val bound = cameraProvider.bindToLifecycle(lifecycleOwner, selector, newPreview)
-            camera = bound
-            hasFlash = bound.cameraInfo.hasFlashUnit()
-            torchOn = false
-            listener.onCameraReady(hasFlash, hasFrontCamera, zoomRatio())
-        } catch (e: Exception) {
-            Log.e(TAG, "bindToLifecycle başarısız", e)
-            listener.onCameraError("Kamera bağlanamadı: ${e.message}")
         }
     }
 

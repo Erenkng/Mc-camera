@@ -78,4 +78,21 @@
     <string name="record_failed">Could not start recording</string>
     <string name="photo_failed">Could not open the photo</string>
     <string name="no_viewer">No app can open this</string>
+    <string name="format">Format</string>
+    <string name="stop_recording">Stop recording</string>
+    <string name="gallery_title">Gallery</string>
+    <string name="gallery_subtitle">Everything you shot with MC Camera</string>
+    <string name="gallery_empty">Nothing here yet.\nHit the shutter!</string>
+    <string name="import_photo">Pick a photo</string>
+
+    <string-array name="mode_names">
+        <item>Blocks</item>
+        <item>Map art</item>
+        <item>Pixels</item>
+        <item>Night vision</item>
+        <item>Nether</item>
+        <item>End</item>
+        <item>Glowstone</item>
+        <item>Underwater</item>
+    </string-array>
 </resources>
